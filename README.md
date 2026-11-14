@@ -5,7 +5,10 @@ Notes and tools from LED fiddling.
 ## Current project
 
 A slim Christmas tree (~7.5 ft tall, ~46" base diameter) wrapped in 500
-WS2812B fairy-light pixels, driven by WLED on a QuinLED Dig-Next-2.
+WS2812B pixels (ten 5 m strings of 50), driven by WLED on a QuinLED Dig-Next-2.
+
+The hardware build largely follows QuinLED's
+[DIY addressable Christmas tree guide](https://quinled.info/2020/11/29/diy-addressable-christmas-tree-guide/).
 
 The goal is to record each LED's 3D position, so effects can be computed from
 where the lights *are* rather than where they sit on the wire. The plan is to
