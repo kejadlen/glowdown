@@ -21,8 +21,35 @@ This file is the repo copy of the thinking.
 - Smaller pixel form factors preferred (mini globes, seed/fairy pixels).
 - Wants independent reviews and track record; pushed back on unreviewed
   Amazon-sourced strands.
-- **Open question:** is the porch covered? The doc assumes yes, which makes
-  IP66 acceptable; if not, stick to IP68.
+- The porch is **covered** (confirmed 2026-11-14), so IP65/IP66 is plenty. See
+  "IP ratings" below.
+
+## IP ratings
+
+An IP code is "IP" plus two digits: solids/dust, then water. All the candidates
+are dust-tight (first digit 6), so only the second digit matters:
+
+| Second digit | Tested against |
+| --- | --- |
+| 4 | Splashing from any direction |
+| 5 | Low-pressure water jets (about 6 mm nozzle) |
+| 6 | Powerful water jets (about 12 mm nozzle, much higher flow) |
+| 7 | Temporary immersion, up to 1 m for 30 minutes |
+| 8 | Continuous immersion; depth and time set by the manufacturer |
+
+- **IP66 and IP68 test different things.** Jets versus submersion. A product
+  rated only IP68 hasn't necessarily passed the jet tests, and vice versa;
+  dual ratings like IP66/IP68 exist. For a hanging string, jets are the more
+  relevant test.
+- **IP68 on cheap listings is usually self-declared**, without third-party
+  testing. Treat the Amazon strands' IP68 as unverified.
+- **The rating covers the bulb, not the system.** Connectors, pigtails, and cut
+  ends are the usual failure points: use sealed connectors, point them
+  downward, and leave a drip loop before each one.
+- **IP doesn't cover UV or cold.** Check the globe material and cold ratings
+  too.
+- On a covered porch the main exposures are wind-driven rain and humidity or
+  condensation. If the porch turns out to be exposed, look for IP66 or better.
 
 ## Candidates (globes)
 
