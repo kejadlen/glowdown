@@ -66,7 +66,8 @@ are dust-tight (first digit 6), so only the second digit matters:
 Ruled out: C9 strings (the reputable ones, from Gilbert, Wally's, and Mattos,
 are RGB-only at dense 6" spacing; the one RGBW C9 with wider spacing was from
 an unreviewed seller). The PixelFit C9 RGBW retrofit needs its own proprietary
-controller, so it won't work with WLED.
+controller, so it won't work with WLED. Since then, a C9 string (likely
+Govee's) has turned up running on WLED as RGBW; see "Govee C9 on WLED" below.
 
 ### Reviews
 
@@ -92,6 +93,45 @@ RGBW pixel type with RGB color ordering was the best match for its lights, and
 made all built-in effects work. A plausible starting point for UCS2904 globes,
 though it isn't a review of these strands
 ([post](https://bikerglen.com/blog/controlling-inexpensive-led-lights-with-wled/)).
+
+### Govee C9 on WLED
+
+The video
+[will it WLED: c9 Christmas String Lights (episode 13)](https://www.youtube.com/watch?v=HSJjVn7V_a8)
+(Chris Maher, 2026-11-08) shows a 50-bulb C9 string running on WLED as RGBW.
+The video description links Govee C9 lights, Gledopto Elite 4D and 6D
+controllers, and a 12V 3A supply; that the Govee string is the one shown
+hasn't been confirmed from the video itself. Its LED output settings:
+
+| Setting | Value |
+| --- | --- |
+| LED type | SK6812/WS2814 RGBW |
+| mA/LED | 55 mA (typ. 5V WS281x) |
+| Color order | GRB, no swap |
+| Length | 50 |
+| Data GPIO | 16 (Gledopto-specific; use the output's own GPIO on another board) |
+| Auto-calculate W channel from RGB | Dual |
+
+From [Govee's product page](https://us.govee.com/products/govee-c9-christmas-string-lights)
+(checked 2026-11-16):
+
+- Models: H6860 (49 ft, 50 bulbs) and H6861 (98 ft, two 49 ft strings, 100
+  bulbs). Spacing isn't listed; 50 bulbs over 49 ft is roughly 1 ft.
+- 12V, 18 W. IP67, UV-resistant, rated -4°F to 104°F.
+- 14.7 ft of cord from the string through the control box to the adapter.
+- No installation instructions, manual, or mounting hardware listed. Govee's
+  only clip guidance is for its permanent outdoor lights: clips every 12-18",
+  optionally over adhesive pads
+  ([guide](https://us.govee.com/blogs/outdoor-lighting/govee-permanent-outdoor-lights-installation)).
+- The video's Amazon link (ASIN B0GFTSYY6N) hasn't been matched to H6860.
+
+A Dig-Next-2 should work in place of the Gledopto. Its main input auto-senses
+5-48V and passes that voltage to the outputs
+([power handling](https://quinled.info/dig-next-2-power-handling/)), so a 12V
+supply drives 12V pixels, and the WLED settings above carry over. 18 W is about
+1.5 A at 12V. The unknown is the connector between the string and Govee's
+control box: expect to cut it and wire 12V, data, and ground into a Dig-Next-2
+output.
 
 ## Controller and power
 
