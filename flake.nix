@@ -31,7 +31,7 @@
               UV_PYTHON = python.interpreter;
               UV_PYTHON_DOWNLOADS = "never";
             }
-            // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux {
+            // pkgs.lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
               # Nix's Python doesn't search system library paths, which PyPI's manylinux wheels rely on.
               LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
                 pkgs.stdenv.cc.cc.lib
