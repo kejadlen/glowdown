@@ -92,6 +92,33 @@ Notes:
 - Other software (ESPHome, FastLED): see the
   [pinout guide](https://quinled.info/dig-next-2-pinout-guide/).
 
+## Sound reactivity (Dig-Next-2)
+
+Researched 2026-11-21; not yet tested on the board.
+
+The Dig-Next-2 has a built-in I2S PDM microphone, with a hole in the case for it.
+QuinLED's compiled WLED has it pre-configured
+([mic page](https://quinled.info/dig-next-2-microphone/)).
+
+1. Check Config → Usermods for **AudioReactive**. If it's missing, the firmware
+   was built without the usermod; reflash with QuinLED's installer. Don't change
+   the mic type or pins on the QuinLED build.
+2. Pick an effect with a **music note icon** (for example Gravimeter).
+3. Tune in the AudioReactive settings, in this order
+   ([WLED docs](https://kno.wled.ge/advanced/audio-reactive/)):
+   - **Squelch** first: raise until the lights stop reacting to room noise
+     (older docs give a default of 10, with 4-20 typical).
+   - **Gain:** the perceived input volume (default 60).
+   - **AGC:** start with Normal.
+
+Notes:
+
+- Keep the mic hole unobstructed.
+- Sound reactivity only applies to WLED's own effects. If an external renderer
+  streams frames over DDP (see `../firmament/`), WLED's audio effects aren't
+  running.
+- Audio sync lets other WLED devices use one device's microphone.
+
 ## Alternative: Pixelblaze
 
 A commercial controller built around mapped, code-driven patterns. MariMapper
