@@ -4,3 +4,26 @@ version = "0.1.0"
 description = "Find each LED's position in 3D from phone captures"
 requires-python = ">=3.13"
 dependencies = []
+
+[project.scripts]
+firmament = "firmament.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.17.6",
+    "ty>=0.0.107",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.9,<0.14"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = ["B", "I", "UP"]
