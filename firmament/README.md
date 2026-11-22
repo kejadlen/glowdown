@@ -11,13 +11,15 @@ Design only. Nothing is built. See [`DESIGN.md`](DESIGN.md).
 
 ## Shape of it
 
-1. **Capture (iPhone, native Swift).** Plays a gray-code pattern to WLED while
-   recording frames, ARKit poses, intrinsics, and depth. A dumb recorder.
-2. **Solver (laptop, offline).** Decodes LED IDs, triangulates, cleans up with
+1. **Pattern player (laptop, Python).** Loops a self-clocking gray-code
+   pattern to WLED over DDP.
+2. **Recorder (iPhone, native Swift).** Records frames, ARKit poses,
+   intrinsics, and depth. A dumb recorder; it doesn't control the LEDs.
+3. **Solver (laptop, Python, offline).** Decodes LED IDs, triangulates, cleans up with
    string and tree-shape priors, exports positions.
-3. **Viewer and exporters.** A 3D preview, plus CSV/JSON, xLights model, and
+4. **Viewer and exporters.** A 3D preview, plus CSV/JSON, xLights model, and
    WLED ledmap outputs.
-4. **Streamer (later).** Computes 3D effects per LED and sends them to WLED
+5. **Streamer (later).** Computes 3D effects per LED and sends them to WLED
    over DDP.
 
 ## Context

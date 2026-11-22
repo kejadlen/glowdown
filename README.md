@@ -31,8 +31,10 @@ do the mapping with an iPhone Pro (ARKit + LiDAR) and a WLED-driven string.
 - Research and notes: written (2026-11-14), compiled from a web research
   session plus earlier chats from October and November 2026.
 - `firmament/`: design only.
-- Next step: a tracking spike, to see whether ARKit tracking survives a dim
-  room with a blinking string.
+- Next steps (see [`firmament/DESIGN.md`](firmament/DESIGN.md#plan)): pin
+  down the pattern and session format, build the DDP pattern player, then a
+  tracking spike to see whether ARKit tracking survives a dim room with the
+  pattern running.
 
 ## A note on provenance
 
