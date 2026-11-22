@@ -25,9 +25,9 @@ as test data.
 | LED count | up to 500 | a few hundred expected; the full tree is ten strands of 50 |
 | ID code | 12 bits, weight 6 | 924 codes >= 500; see [`SPEC.md`](SPEC.md#id-code) |
 | Spacing along a strand | ~0.10 m | 50 LEDs per 5 m; max consecutive distance |
-| Strand boundaries | every 50th LED | the spacing prior does not hold across these |
+| Strand boundaries | every 50th LED | the spacing prior does not hold across these; set by `strand_length` |
 | WLED outputs | 2 x 250 | to confirm: indices continue across both outputs |
-| Tree | ~2.29 m tall, ~0.58 m base radius | approximate cone prior |
+| Tree | ~2.29 m tall, ~0.58 m base radius | approximate cone prior, optional in `lights.json` |
 
 ## Decisions
 
@@ -38,8 +38,16 @@ as test data.
   session format.
 - **Unseen LEDs get approximate positions.** Any LED the solver can't place,
   whether hidden by the walls or a branch, or never decoded, is interpolated
-  along its strand between its seen neighbors and kept near the cone.
-  Approximate is fine for these, and outputs mark them with 0 views.
+  along its strand between its seen neighbors. Approximate is fine for these,
+  and outputs mark them with 0 views. Start with linear interpolation, evenly
+  spaced by index; at a strand's ends, continue the line through the last two
+  seen LEDs. Improve it later from the positions that are known, for example
+  a curve fit through the strand's seen LEDs, or the cone when `lights.json`
+  gives one.
+- **Develop on a single strand.** Development and testing run on one strand,
+  not necessarily on the tree, so nothing may assume ten strands or a cone.
+  The pattern player already takes any LED count; the solver's priors come
+  from `lights.json`.
 - **Front arc only.** The tree stays in a corner, so stations cover an arc in
   front of it, not a full circle. LEDs facing the walls are never seen, which
   makes interpolation part of v1 rather than polish.
@@ -124,6 +132,8 @@ each image and where it was actually seen.
 ### 5. Viewer
 
 A 3D plot of the points, colored by confidence, so bad ones are easy to spot.
+Later, a web or native app for exploring the map, with interpolated LEDs shown
+apart from seen ones.
 
 ### 6. Streamer (later)
 
@@ -134,14 +144,15 @@ flames. It can share DDP code with the pattern player.
 ## Capture session layout
 
 [`SPEC.md`](SPEC.md#capture-session) defines it: per-station directories of
-JPEG frames and a `poses.jsonl`, with the tree's LED count and strand length
-in a separate `tree.json`. The synthetic generator writes this same format.
+JPEG frames and a `poses.jsonl`, with the LED count, strand length, and
+optional cone in a separate `lights.json`. The synthetic generator writes this same format.
 
 ## Testing
 
-- **Synthetic first.** Generate known LED positions on a cone, render them
-  through simulated cameras with realistic noise, drift, blooming, and
-  occlusion, and check the solver recovers them. No tree needed.
+- **Synthetic first.** Generate known LED positions, on a cone and as a loose
+  single strand, render them through simulated cameras with realistic noise,
+  drift, blooming, and occlusion, and check the solver recovers them. No tree
+  needed.
 - **Real baseline.** Map the same tree with MariMapper and compare.
 
 ## Risks
@@ -189,11 +200,11 @@ In order. Steps 1, 2 and 4 need no phone or tree; 3 and 5 do.
    triangulate.
 5. **Real data.** Record the tree and run the solver.
 6. **Height-ordered WLED ledmap,** the quick win once any positions exist.
-   Unseen LEDs get heights by interpolating along their strand between seen
-   neighbors.
+   Unseen LEDs get heights by linear interpolation along their strand between
+   seen neighbors.
 7. Priors and bundle adjustment.
 8. Viewer and exporters.
 9. Streamer with a first 3D effect.
 
 A v1 for this season would stop at step 6, plus a rough 3D map from raw ARKit
-poses, with unseen LEDs placed on the cone along their strand.
+poses, with unseen LEDs linearly interpolated along their strand.

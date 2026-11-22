@@ -7,23 +7,27 @@ here that breaks old sessions bumps the format number.
 [`DESIGN.md`](DESIGN.md) covers why the pieces are shaped this way. This
 document covers only what each piece must produce or accept.
 
-## Tree description
+## Lights description
 
-The solver reads the tree's properties from `tree.json`, kept separately
-from any recording. The same tree is recorded many times, and the
-recorder never needs these values.
+The solver reads the lights' properties from `lights.json`, kept
+separately from any recording. The same lights are recorded many times,
+and the recorder never needs these values.
 
 ```json
 {
   "led_count": 500,
-  "strand_length": 50
+  "strand_length": 50,
+  "cone": { "height": 2.29, "base_radius": 0.58 }
 }
 ```
 
 | Field | Meaning |
 | --- | --- |
 | `led_count` | Number of LEDs, indexed `0` to `led_count - 1`. Between 2 and 500. |
-| `strand_length` | LEDs per physical strand. Strands start at every multiple of this index, and the spacing prior doesn't hold across a strand boundary. |
+| `strand_length` | LEDs per physical strand. Strands start at every multiple of this index, and the spacing prior doesn't hold across a strand boundary. The last strand may be shorter. |
+| `cone` | Optional. The approximate shape the LEDs sit on: an upright cone, apex up, with `height` and `base_radius` in meters. The solver fits its position and refines its size. Without it, the solver uses no shape prior. |
+
+A single test strand off the tree is `{"led_count": 50, "strand_length": 50}`.
 
 ## ID code
 
