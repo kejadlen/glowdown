@@ -153,7 +153,10 @@ in a separate `tree.json`. The synthetic generator writes this same format.
 - Can exposure be locked during an ARKit session?
 - Whether LiDAR meaningfully improves the cone prior or visibility checks.
 - Is there a recorder app good enough to skip writing the Swift app for the
-  spike?
+  spike? [Stray Scanner](https://github.com/strayrobots/scanner) (MIT) looks
+  like it: per its `docs/format.md`, it records an HEVC video, an
+  `odometry.csv` with a pose and intrinsics for every frame, and LiDAR depth.
+  Its docs don't state the pose convention or the tracking state.
 
 ## Plan
 
@@ -162,7 +165,9 @@ In order. Steps 1, 2 and 4 need no phone or tree; 3 and 5 do.
 1. **Spec.** Pin down the code scheme, slot timing, and session format. These
    are the contract between capture, synthetic data, and solver. Drafted in
    [`SPEC.md`](SPEC.md).
-2. **Pattern player.** DDP loop with debug modes; check it on the tree.
+2. **Pattern player.** DDP loop with debug modes; check it on the tree. Built,
+   and checked by eye on a single 50-LED strand (2026-11-22). Whether indices
+   continue across the two outputs is still open.
 3. **Tracking spike.** Minimal Swift recorder (or an existing app) on the
    phone, with the pattern player running, in a dim room. Does tracking hold?
 4. **Synthetic generator,** then the solver against it: detect, sync, decode,
