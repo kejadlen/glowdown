@@ -36,6 +36,13 @@ as test data.
 - **Stations, not continuous capture,** for v1: hold still for at least two
   cycles (4.2 s), then move. Continuous capture can come later on the same
   session format.
+- **Unseen LEDs get approximate positions.** Any LED the solver can't place,
+  whether hidden by the walls or a branch, or never decoded, is interpolated
+  along its strand between its seen neighbors and kept near the cone.
+  Approximate is fine for these, and outputs mark them with 0 views.
+- **Front arc only.** The tree stays in a corner, so stations cover an arc in
+  front of it, not a full circle. LEDs facing the walls are never seen, which
+  makes interpolation part of v1 rather than polish.
 - **Capture app: native Swift** (a Mac with Xcode is on hand). An
   off-the-shelf LiDAR recorder that exports per-frame poses could stand in for
   a first spike; not checked which ones do.
@@ -67,8 +74,8 @@ as test data.
   state. Images as frames or a video.
 - A button marks station start and end, so the solver knows when the camera
   was meant to be still.
-- Stations: cover the tree from many heights and angles, including above and
-  below.
+- Stations: cover the arc in front of the corner from many heights, including
+  above and below, and as far around each side as the walls allow.
 
 ### 3. Solver (laptop, Python)
 
@@ -110,7 +117,7 @@ each image and where it was actually seen.
 ### 4. Outputs
 
 - **Canonical:** `leds.json` or CSV with index, x, y, z (meters, y up),
-  confidence, and views per LED.
+  confidence, and views per LED (0 for interpolated LEDs).
 - **Exporters:** WLED ledmap (height order as the trivial first version),
   xLights 3D custom model, Pixelblaze map, Blender-friendly CSV.
 
@@ -142,6 +149,12 @@ in a separate `tree.json`. The synthetic generator writes this same format.
 - ARKit tracking in a dim room (first thing to test).
 - Exposure blooming the LEDs.
 - LEDs facing away from the camera biasing detections.
+- LEDs facing the walls never being seen. Each wrap of a strand passes behind
+  the tree, so every strand has gaps to fill from the priors.
+- Light reflecting off the walls. A reflection blinks the same code as its
+  LED, so it decodes as that LED. A glossy reflection moves between views and
+  fails triangulation, but a diffuse glow is a fixed spot on the wall and
+  triangulates fine. Reject it by blob size and by distance from the cone.
 - Drift between stations.
 - Rolling shutter splitting a bit transition across one frame (holding each
   slot for 3+ frames, and discarding transition frames, should cover it).
@@ -170,13 +183,17 @@ In order. Steps 1, 2 and 4 need no phone or tree; 3 and 5 do.
    continue across the two outputs is still open.
 3. **Tracking spike.** Minimal Swift recorder (or an existing app) on the
    phone, with the pattern player running, in a dim room. Does tracking hold?
+   Walk the front arc out and back, starting and ending on a marked spot; the
+   gap between the first and last poses is the drift.
 4. **Synthetic generator,** then the solver against it: detect, sync, decode,
    triangulate.
 5. **Real data.** Record the tree and run the solver.
 6. **Height-ordered WLED ledmap,** the quick win once any positions exist.
+   Unseen LEDs get heights by interpolating along their strand between seen
+   neighbors.
 7. Priors and bundle adjustment.
 8. Viewer and exporters.
 9. Streamer with a first 3D effect.
 
 A v1 for this season would stop at step 6, plus a rough 3D map from raw ARKit
-poses.
+poses, with unseen LEDs placed on the cone along their strand.
