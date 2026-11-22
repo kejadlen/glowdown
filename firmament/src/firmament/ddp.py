@@ -61,10 +61,13 @@ def packets(frame: bytes, sequence: int) -> list[bytes]:
 
 class DdpSender:
     def __init__(self, host: str, port: int = PORT) -> None:
-        family, kind, proto, _, address = socket.getaddrinfo(host, port, type=socket.SOCK_DGRAM)[0]
+        results = socket.getaddrinfo(host, port, type=socket.SOCK_DGRAM)
+        # Prefer IPv4: a hostname can resolve to IPv6 first, and WLED may not listen there.
+        family, kind, proto, _, address = min(results, key=lambda r: r[0] != socket.AF_INET)
         self._socket = socket.socket(family, kind, proto)
         self._socket.connect(address)
         self._sequence = 0
+        self.ip = str(address[0])
 
     def send(self, frame: bytes) -> None:
         self._sequence = self._sequence % 15 + 1

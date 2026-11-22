@@ -1,7 +1,39 @@
+import socket
+from collections.abc import Iterator
+
 import pytest
 
 from firmament.cli import main, play
+from firmament.ddp import Header
 from firmament.pattern import SLOT_COUNT, SLOT_SECONDS
+
+
+@pytest.fixture
+def receiver() -> Iterator[socket.socket]:
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.bind(("127.0.0.1", 0))
+        s.settimeout(1)
+        yield s
+
+
+def _interrupt(_: float) -> None:
+    raise KeyboardInterrupt
+
+
+def test_light_reports_start_and_stop_and_turns_leds_off(receiver, monkeypatch, capsys):
+    monkeypatch.setattr("firmament.cli.time.sleep", _interrupt)
+    port = str(receiver.getsockname()[1])
+
+    assert (
+        main(["light", "--host", "localhost", "--port", port, "--leds", "4", "--index", "1"]) == 0
+    )
+
+    lit, off = (receiver.recv(2048)[Header.SIZE :] for _ in range(2))
+    assert lit == bytes(3) + bytes([32] * 3) + bytes(6)
+    assert off == bytes(12)
+    err = capsys.readouterr().err
+    assert "lighting LED 1 on localhost (127.0.0.1); press Ctrl-C to stop" in err
+    assert "stopped and turned the LEDs off" in err
 
 
 class FakeClock:

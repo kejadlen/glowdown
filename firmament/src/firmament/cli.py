@@ -66,6 +66,10 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     with sender:
+        print(
+            f"firmament: {_activity(args)} on {args.host} ({sender.ip}); press Ctrl-C to stop",
+            file=sys.stderr,
+        )
         try:
             if args.command == "play":
                 _play(frames, sender, args.log)
@@ -79,8 +83,22 @@ def main(argv: list[str] | None = None) -> int:
         try:
             sender.send(slot_frame(ALL_OFF, args.leds, args.level))
         except OSError:
-            pass  # WLED goes back to its own effect after its realtime timeout anyway.
+            # WLED goes back to its own effect after its realtime timeout anyway.
+            print("firmament: stopped, but couldn't turn the LEDs off", file=sys.stderr)
+        else:
+            print("firmament: stopped and turned the LEDs off", file=sys.stderr)
     return 0
+
+
+def _activity(args: argparse.Namespace) -> str:
+    if args.command == "play":
+        cycle = SLOT_COUNT * SLOT_SECONDS
+        return f"playing the ID pattern ({args.leds} LEDs, {cycle:.1f} s per cycle)"
+    if args.index is not None:
+        return f"lighting LED {args.index}"
+    first = args.strand * args.strand_length
+    last = min(first + args.strand_length, args.leds) - 1
+    return f"lighting strand {args.strand} (LEDs {first} to {last})"
 
 
 def _frames(args: argparse.Namespace) -> list[bytes]:
