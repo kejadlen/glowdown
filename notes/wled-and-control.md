@@ -58,6 +58,39 @@ The differences are build quality, protection, and polish.
 
 For anything permanent, wired Ethernet is worth having.
 
+## Flashing the Dig-Next-2
+
+Researched 2026-11-21. The board ships with WLED already installed, so
+flashing is only needed to update, reset, or switch software.
+
+1. Plug the Dig-Next-2 into your computer with a data-capable USB-C cable.
+2. In a Chrome-based browser (Web Serial), open
+   [install.quinled.info/dig-next-2/](https://install.quinled.info/dig-next-2/).
+3. Pick the board version from the dropdown, hit "Install", and choose the
+   "USB Serial" port. It takes about 3 minutes.
+4. Join the board's WLED-AP Wi-Fi from a phone and add the 2.4GHz home network.
+
+Notes:
+
+- **Use QuinLED's build.** It has the multi-relay usermod compiled in and
+  configured; without it the Dig-Next-2 produces no output power
+  ([guide](https://quinled.info/dig-next-2-multi-relay-guide/)). Don't use a
+  generic WLED binary.
+- **Flashing resets settings.** Reapply the LED config afterwards (WS2812B, GRB,
+  two outputs of 250, current limit), or back up the config first.
+- **USB-C is for standby power and flashing only**, not for driving LEDs
+  ([FAQ](https://dig-next.info/dig-next-2-faq.html)). Flashing with the LED
+  supply disconnected is a precaution of ours, not from the installer page.
+- **OTA alternative:** Settings, then Security & Updates, then Manual OTA
+  Update, using QuinLED's pre-compiled `.bin` from the
+  [QuinLED-Firmware repo](https://github.com/intermittech/QuinLED-Firmware/releases)
+  (it has a Dig-Next-2 folder). A forum user warned that OTA to WLED 16.x on
+  older QuinLED ESP32s needed physical access to recover; that report was about
+  earlier boards, not the Dig-Next-2, but keep USB access handy
+  ([thread](https://wled.discourse.group/t/16-x-problems-with-early-quinled-esp32s/15450)).
+- Other software (ESPHome, FastLED): see the
+  [pinout guide](https://quinled.info/dig-next-2-pinout-guide/).
+
 ## Alternative: Pixelblaze
 
 A commercial controller built around mapped, code-driven patterns. MariMapper
