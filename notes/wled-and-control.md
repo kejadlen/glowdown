@@ -68,7 +68,8 @@ flashing is only needed to update, reset, or switch software.
    [install.quinled.info/dig-next-2/](https://install.quinled.info/dig-next-2/).
 3. Pick the board version from the dropdown, hit "Install", and choose the
    "USB Serial" port. It takes about 3 minutes.
-4. Join the board's WLED-AP Wi-Fi from a phone and add the 2.4GHz home network.
+4. Join the board's WLED-AP Wi-Fi (default password `wled1234`) from a phone or
+   computer and add the 2.4GHz home network.
 
 Notes:
 
