@@ -194,8 +194,8 @@ In order. Steps 1, 2 and 4 need no phone or tree; 3 and 5 do.
    continue across the two outputs is still open.
 3. **Tracking spike.** Minimal Swift recorder (or an existing app) on the
    phone, with the pattern player running, in a dim room. Does tracking hold?
-   Walk the front arc out and back, starting and ending on a marked spot; the
-   gap between the first and last poses is the drift.
+   Drift isn't measured on its own; the solver's reprojection error across
+   stations shows it.
 4. **Synthetic generator,** then the solver against it: detect, sync, decode,
    triangulate.
 5. **Real data.** Record the tree and run the solver.
