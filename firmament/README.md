@@ -39,13 +39,25 @@ uv run firmament light --host wled.local --leds 500 --strand 5
 
 An effect is a Python file that defines `color(led, t)`. It gets one LED and
 the time in seconds since the stream started, and returns `(r, g, b)` from 0
-to 255; values outside that range are clamped. `led` has `index`, `x`, `y`,
-`z` (meters, y up), and `views` (0 for an interpolated position).
+to 255; values outside that range are clamped.
 
 ```python
 def color(led, t):
-    return (255, 80, 0) if led.y < t % 2 else (0, 0, 0)
+    return (255, 80, 0) if led.h < t % 1 else (0, 0, 0)
 ```
+
+Directions are from where the capture started: x points right, y up, and z
+back toward the camera. `led` has the following fields:
+
+| Field | Meaning |
+| --- | --- |
+| `index` | The LED's index. |
+| `x`, `y`, `z` | Position in meters. |
+| `h` | Height, 0 at the lowest LED to 1 at the highest. |
+| `r` | Distance from a vertical axis through the middle of the LEDs, 0 to 1 at the farthest. |
+| `theta` | Angle around that axis in radians, -π to π. 0 faces where the capture started, and it increases to the right. |
+| `nx`, `ny`, `nz` | Position centered on the LEDs and scaled so the largest span is -1 to 1, keeping proportions. |
+| `views` | How many observations placed the LED; 0 means interpolated. |
 
 Stream it to WLED, to a 3D preview in [Rerun](https://rerun.io)'s viewer, or
 both, using a positions file in the [`leds.csv`](SPEC.md#led-positions)

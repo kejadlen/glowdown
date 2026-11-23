@@ -12,7 +12,7 @@ from typing import TextIO
 
 from firmament.codes import MAX_LEDS
 from firmament.ddp import PORT, DdpSender
-from firmament.effects import LiveEffect, scale
+from firmament.effects import LiveEffect, effect_leds, scale
 from firmament.pattern import (
     ALL_OFF,
     MIN_LEDS,
@@ -103,6 +103,7 @@ def _stream(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
     except ValueError as e:
         parser.error(str(e))
 
+    placed = effect_leds(leds)
     effect = LiveEffect(
         args.effect, lambda message: print(f"firmament: {message}", file=sys.stderr)
     )
@@ -123,7 +124,7 @@ def _stream(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
 
         def frame_for_tick(k: int) -> bytes:
             t = k / args.fps
-            frame = effect.frame(leds, t)
+            frame = effect.frame(placed, t)
             if preview:
                 preview.show(t, frame)
             return scale(frame, args.brightness)

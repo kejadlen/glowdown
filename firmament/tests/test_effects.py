@@ -1,11 +1,12 @@
+import math
 import os
 
 import pytest
 
-from firmament.effects import EffectError, LiveEffect, load, render, scale
+from firmament.effects import EffectError, LiveEffect, effect_leds, load, render, scale
 from firmament.positions import Led
 
-LEDS = [Led(0, 0.0, 0.0, 0.0, 1), Led(1, 0.0, 1.0, 0.0, 0)]
+LEDS = effect_leds([Led(0, 0.0, 0.0, 0.0, 1), Led(1, 0.0, 1.0, 0.0, 0)])
 
 
 def _effect(tmp_path, source, name="effect.py"):
@@ -65,6 +66,34 @@ def test_reports_the_effect_files_line_for_an_error(tmp_path):
 def test_load_rejects_broken_files(tmp_path, source, match):
     with pytest.raises(EffectError, match=match):
         load(_effect(tmp_path, source))
+
+
+def test_effect_leds_add_normalized_and_cylindrical_coordinates():
+    leds = [Led(0, 1, 0, 0, 1), Led(1, -1, 2, 0, 1), Led(2, 0, 1, -1, 0), Led(3, 0, 1, 1, 0)]
+    expected = [
+        (0.0, 1.0, math.pi / 2, 1.0, -1.0, 0.0),
+        (1.0, 1.0, -math.pi / 2, -1.0, 1.0, 0.0),
+        (0.5, 1.0, math.pi, 0.0, 0.0, -1.0),
+        (0.5, 1.0, 0.0, 0.0, 0.0, 1.0),
+    ]
+    for e, want in zip(effect_leds(leds), expected, strict=True):
+        assert (e.h, e.r, e.theta, e.nx, e.ny, e.nz) == pytest.approx(want)
+
+
+def test_effect_leds_keep_each_leds_position():
+    led = effect_leds([Led(0, 1, 2, 3, 4), Led(1, 5, 6, 7, 0)])[0]
+    assert (led.index, led.x, led.y, led.z, led.views) == (0, 1, 2, 3, 4)
+
+
+def test_normalized_positions_keep_proportions():
+    near, far = effect_leds([Led(0, 0, 0, 0, 1), Led(1, 4, 1, 0, 1)])
+    assert (near.nx, near.ny, near.nz) == pytest.approx((-1.0, -0.25, 0.0))
+    assert (far.nx, far.ny, far.nz) == pytest.approx((1.0, 0.25, 0.0))
+
+
+def test_a_map_with_no_extent_gets_zeros():
+    led = effect_leds([Led(0, 1, 1, 1, 1), Led(1, 1, 1, 1, 1)])[0]
+    assert (led.h, led.r, led.theta, led.nx, led.ny, led.nz) == (0, 0, 0, 0, 0, 0)
 
 
 def test_scale_applies_brightness():
