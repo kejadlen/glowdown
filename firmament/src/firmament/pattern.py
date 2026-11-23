@@ -10,6 +10,8 @@ ALL_ON = 0
 ALL_OFF = 1
 MIN_LEDS = 2
 
+type IsLit = Callable[[int], bool]
+
 
 def slot_frame(slot: int, led_count: int, level: int) -> bytes:
     if not 0 <= slot < SLOT_COUNT:
@@ -36,7 +38,7 @@ def strand_frame(strand: int, strand_length: int, led_count: int, level: int) ->
     return _frame(led_count, level, lambda i: i // strand_length == strand)
 
 
-def _frame(led_count: int, level: int, lit: Callable[[int], bool]) -> bytes:
+def _frame(led_count: int, level: int, lit: IsLit) -> bytes:
     if not MIN_LEDS <= led_count <= MAX_LEDS:
         raise ValueError(f"LED count {led_count} is outside {MIN_LEDS} to {MAX_LEDS}")
     if not 0 <= level <= 255:

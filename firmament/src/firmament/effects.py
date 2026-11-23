@@ -27,6 +27,7 @@ class EffectLed(Led):
 
 
 type ColorFn = Callable[[EffectLed, float], object]
+type Report = Callable[[str], None]
 
 
 def effect_leds(leds: Sequence[Led]) -> list[EffectLed]:
@@ -101,7 +102,7 @@ def scale(frame: bytes, brightness: int) -> bytes:
 class LiveEffect:
     """An effect file that reloads when it changes, and falls back to the last version that worked."""
 
-    def __init__(self, path: Path, report: Callable[[str], None]) -> None:
+    def __init__(self, path: Path, report: Report) -> None:
         self._path = path
         self._report = report
         self._mtime: int | None = None

@@ -41,6 +41,8 @@ MIN_DEPTH = 0.05
 MIN_CONTRAST = 40
 MIN_GAP = 0.3
 
+type LoadDepth = Callable[[int], np.ndarray]  # Frame index to a depth map in meters.
+
 
 @dataclass(frozen=True)
 class Capture:
@@ -51,7 +53,7 @@ class Capture:
     positions: np.ndarray  # (n, 3) meters, gravity-aligned world with y up.
     intrinsics: np.ndarray  # (n, 4) fx, fy, cx, cy in pixels.
     frames: list[np.ndarray]  # (n,) grayscale uint8 images.
-    depth: Callable[[int], np.ndarray]  # Frame index to a depth map in meters.
+    depth: LoadDepth
 
 
 @dataclass(frozen=True)

@@ -27,16 +27,24 @@ from firmament.positions import read_leds, write_leds
 # Resend a static debug frame well inside WLED's 2.5 s realtime timeout.
 LIGHT_RESEND_SECONDS = 1.0
 
+type Send = Callable[[bytes], None]
+type FrameForTick = Callable[[int], bytes]
+type OnTick = Callable[[int], None]
+type OnRebase = Callable[[float], None]
+type Clock = Callable[[], float]
+type Sleep = Callable[[float], None]
+type ParseInt = Callable[[str], int]
+
 
 def run(
-    send: Callable[[bytes], None],
-    frame_for_tick: Callable[[int], bytes],
+    send: Send,
+    frame_for_tick: FrameForTick,
     period: float,
     *,
-    on_tick: Callable[[int], None] = lambda _: None,
-    on_rebase: Callable[[float], None] = lambda _: None,
-    clock: Callable[[], float] = time.monotonic,
-    sleep: Callable[[float], None] = time.sleep,
+    on_tick: OnTick = lambda _: None,
+    on_rebase: OnRebase = lambda _: None,
+    clock: Clock = time.monotonic,
+    sleep: Sleep = time.sleep,
     limit: int | None = None,
 ) -> None:
     """Send one frame per `period` seconds, until interrupted or `limit` ticks."""
@@ -337,7 +345,7 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _ranged(low: int, high: int) -> Callable[[str], int]:
+def _ranged(low: int, high: int) -> ParseInt:
     def parse(text: str) -> int:
         try:
             value = int(text)
