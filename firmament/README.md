@@ -7,10 +7,13 @@ The name: a sky full of points of light, each with a coordinate.
 
 ## Status
 
-The pattern player is built and checked on a single strand. The streamer plays
-effect files from a positions file. The solver is a prototype outside the
-repository, and everything else is design only. See [`DESIGN.md`](DESIGN.md) for the
-plan and [`SPEC.md`](SPEC.md) for the pattern and session format.
+The pattern player is built and checked on a single strand. The solver maps a
+Stray Scanner recording, standing in for the iPhone recorder, without the
+priors or bundle adjustment the design calls for. The streamer plays effect
+files from the solver's positions file. Everything else is design only. See
+[`DESIGN.md`](DESIGN.md) for the plan and [`SPEC.md`](SPEC.md) for the pattern
+and session format, and the [top-level README](../README.md#map-the-leds) for
+mapping end to end.
 
 ## Run the pattern player
 
@@ -34,6 +37,25 @@ uv run firmament light --host wled.local --leds 500 --strand 5
 ```
 
 `--level` sets the brightness of a lit LED, from 0 to 255 (default 32).
+
+## Find the LED positions
+
+`solve` reads a [Stray Scanner](https://github.com/strayrobots/scanner)
+recording of the ID pattern and writes a positions file in the
+[`leds.csv`](SPEC.md#led-positions) format:
+
+```sh
+uv run firmament solve ../data/fb770bb311 --leds 50
+```
+
+`--leds` must match the count the pattern was played on. The file goes in the
+recording's folder unless `--out` names another path. `solve` finds each LED
+lit in a cycle's all-on slot and places it from its depth and the camera pose.
+Then it follows that point through the rest of the cycle to read the LED's
+ID. Each cycle that reads an LED's ID counts as one view. `solve` interpolates
+an LED it never read along its strand, `--strand-length` LEDs long (default
+50). A strand with fewer than 2 placed LEDs is interpolated from the nearest
+placed LEDs on other strands, and `solve` names it.
 
 ## Play an effect
 
