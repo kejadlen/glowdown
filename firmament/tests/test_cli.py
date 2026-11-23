@@ -3,9 +3,8 @@ from collections.abc import Iterator
 
 import pytest
 
-from firmament.cli import main, play
+from firmament.cli import main, run
 from firmament.ddp import Header
-from firmament.pattern import SLOT_COUNT, SLOT_SECONDS
 
 
 @pytest.fixture
@@ -49,37 +48,43 @@ class FakeClock:
         self.now += seconds
 
 
-def test_play_cycles_through_slots_in_order():
+PERIOD = 0.150
+
+
+def test_run_sends_each_ticks_frame_in_order():
     clock = FakeClock()
-    slots: list[int] = []
-    play(
-        lambda _: None,
-        lambda s: bytes([s]),
-        on_slot=slots.append,
+    sent: list[bytes] = []
+    ticks: list[int] = []
+    run(
+        sent.append,
+        lambda k: bytes([k]),
+        PERIOD,
+        on_tick=ticks.append,
         clock=clock,
         sleep=clock.sleep,
         limit=30,
     )
-    assert slots == [k % SLOT_COUNT for k in range(30)]
+    assert sent == [bytes([k]) for k in range(30)]
+    assert ticks == list(range(30))
 
 
-def test_play_holds_each_slot_for_slot_seconds():
+def test_run_holds_each_frame_for_one_period():
     clock = FakeClock()
-    play(lambda _: None, lambda _: bytes(3), clock=clock, sleep=clock.sleep, limit=5)
-    assert clock.sleeps == pytest.approx([SLOT_SECONDS] * 5)
+    run(lambda _: None, lambda _: bytes(3), PERIOD, clock=clock, sleep=clock.sleep, limit=5)
+    assert clock.sleeps == pytest.approx([PERIOD] * 5)
 
 
-def test_play_absorbs_small_lag_without_drift():
+def test_run_absorbs_small_lag_without_drift():
     clock = FakeClock()
 
     def slow_send(_: bytes) -> None:
         clock.now += 0.010
 
-    play(slow_send, lambda _: bytes(3), clock=clock, sleep=clock.sleep, limit=10)
-    assert clock.now == pytest.approx(10 * SLOT_SECONDS)
+    run(slow_send, lambda _: bytes(3), PERIOD, clock=clock, sleep=clock.sleep, limit=10)
+    assert clock.now == pytest.approx(10 * PERIOD)
 
 
-def test_play_restarts_schedule_after_a_long_stall():
+def test_run_restarts_schedule_after_a_long_stall():
     clock = FakeClock()
     rebases: list[float] = []
     sends = 0
@@ -90,16 +95,17 @@ def test_play_restarts_schedule_after_a_long_stall():
         if sends == 2:
             clock.now += 1.0
 
-    play(
+    run(
         stalling_send,
         lambda _: bytes(3),
+        PERIOD,
         on_rebase=rebases.append,
         clock=clock,
         sleep=clock.sleep,
         limit=4,
     )
-    assert rebases == [pytest.approx(1.0 - SLOT_SECONDS)]
-    assert clock.sleeps[-2:] == pytest.approx([SLOT_SECONDS] * 2)
+    assert rebases == [pytest.approx(1.0 - PERIOD)]
+    assert clock.sleeps[-2:] == pytest.approx([PERIOD] * 2)
 
 
 def test_light_rejects_index_beyond_led_count(capsys):

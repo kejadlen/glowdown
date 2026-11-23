@@ -24,29 +24,30 @@ from firmament.pattern import (
 LIGHT_RESEND_SECONDS = 1.0
 
 
-def play(
+def run(
     send: Callable[[bytes], None],
-    frame_for_slot: Callable[[int], bytes],
+    frame_for_tick: Callable[[int], bytes],
+    period: float,
     *,
-    on_slot: Callable[[int], None] = lambda _: None,
+    on_tick: Callable[[int], None] = lambda _: None,
     on_rebase: Callable[[float], None] = lambda _: None,
     clock: Callable[[], float] = time.monotonic,
     sleep: Callable[[float], None] = time.sleep,
     limit: int | None = None,
 ) -> None:
-    """Loop the pattern, one slot per SLOT_SECONDS, until interrupted or `limit` slots."""
+    """Send one frame per `period` seconds, until interrupted or `limit` ticks."""
     next_at = clock()
-    slots = count() if limit is None else range(limit)
-    for k in slots:
-        slot = k % SLOT_COUNT
-        send(frame_for_slot(slot))
-        on_slot(slot)
-        next_at += SLOT_SECONDS
+    ticks = count() if limit is None else range(limit)
+    for k in ticks:
+        send(frame_for_tick(k))
+        on_tick(k)
+        next_at += period
         lag = clock() - next_at
         if lag <= 0:
             sleep(-lag)
-        elif lag > SLOT_SECONDS / 2:
-            # Catching up would leave the next slot too short to decode, so start a fresh schedule.
+        elif lag > period / 2:
+            # Catching up would leave the next frame too short (for the pattern, too short to
+            # decode), so start a fresh schedule.
             on_rebase(lag)
             next_at = clock()
 
@@ -110,9 +111,9 @@ def _frames(args: argparse.Namespace) -> list[bytes]:
 
 
 def _play(frames: list[bytes], sender: DdpSender, log: TextIO | None) -> None:
-    def on_slot(slot: int) -> None:
+    def on_tick(k: int) -> None:
         if log:
-            log.write(json.dumps({"t": time.time(), "slot": slot}) + "\n")
+            log.write(json.dumps({"t": time.time(), "slot": k % SLOT_COUNT}) + "\n")
 
     def on_rebase(lag: float) -> None:
         print(
@@ -120,7 +121,13 @@ def _play(frames: list[bytes], sender: DdpSender, log: TextIO | None) -> None:
         )
 
     try:
-        play(sender.send, frames.__getitem__, on_slot=on_slot, on_rebase=on_rebase)
+        run(
+            sender.send,
+            lambda k: frames[k % SLOT_COUNT],
+            SLOT_SECONDS,
+            on_tick=on_tick,
+            on_rebase=on_rebase,
+        )
     finally:
         if log:
             log.close()
