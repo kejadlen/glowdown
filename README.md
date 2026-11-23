@@ -34,7 +34,8 @@ commands from `firmament/`, inside the repository's dev shell
 2. Record in Stray Scanner. Start with the phone facing the LEDs, because the
    map's axes come from where the recording starts: x to the right, y up, and z
    back toward you. Then walk slowly around the front of the LEDs for at least
-   4.2 s, two cycles of the pattern.
+   4.2 s, two cycles of the pattern. The room can stay lit, but keep bright
+   windows and lamps out from behind the LEDs.
 3. Press Ctrl-C to stop the player.
 4. Copy the recording's folder from the phone into `data/`, which is ignored
    by version control. Connect the phone to the Mac, select it in Finder's
@@ -78,8 +79,9 @@ commands from `firmament/`, inside the repository's dev shell
 - `firmament/`: mapped a single 50-LED strand in daylight (2026-11-22).
   `solve` placed 34 of the 50 LEDs from a 10.8 s Stray Scanner walk and
   interpolated the rest. Nothing has run against the tree yet.
-- Next steps (see [`firmament/DESIGN.md`](firmament/DESIGN.md#plan)): map the
-  tree in a dim room, to see whether ARKit tracking survives it.
+- Next steps (see [`firmament/DESIGN.md`](firmament/DESIGN.md#plan)): check
+  whether WLED's numbering continues across the two 250-pixel outputs, then
+  map the tree.
 
 ## A note on provenance
 

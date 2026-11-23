@@ -36,7 +36,9 @@ viewpoint. Two ways to use it:
 - **Tracking in the dark.** Visual-inertial tracking wants visible features,
   and mapping is normally done in a dark room. A dim lamp and lowered LED
   brightness is probably the compromise. LiDAR may help low-light tracking
-  **(unverified)**. This is the first thing to test.
+  **(unverified)**. This is the first thing to test. Update, 2026-11-22: a
+  daylight run decoded the LEDs fine, so mapping can happen with the room lit
+  and this stops mattering.
 - **Exposure.** Auto-exposure will bloom the LEDs. iOS 16+ may expose the
   underlying capture device so exposure can be locked **(unverified)**.
 - **Drift.** ARKit poses drift slightly; a final bundle-adjustment step
@@ -60,7 +62,8 @@ viewpoint. Two ways to use it:
 Build a minimal ARKit app that logs `trackingState` while waving the phone at a
 blinking string in a dim room. If tracking holds, the rest is straightforward
 engineering. If it doesn't, fall back to stations with the room lit between
-captures.
+captures. Done 2026-11-22, with Stray Scanner in daylight instead of a dim
+room; tracking held.
 
 See [`../firmament/DESIGN.md`](../firmament/DESIGN.md) for the planned
 pipeline.

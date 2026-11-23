@@ -1,7 +1,7 @@
 # firmament design
 
-Draft, 2026-11-14; revised 2026-11-22. Everything here is a plan, not a record
-of what works.
+Draft, 2026-11-14; revised 2026-11-22. Mostly a plan; [Plan](#plan) records
+what's built and checked so far.
 
 ## Principle: the laptop plays, the phone records, the laptop solves
 
@@ -33,9 +33,13 @@ as test data.
 
 - **Solver language: Python** (NumPy, OpenCV, SciPy). The problem is small
   (500 points, a few dozen stations); revisit only if it's slow.
-- **Stations, not continuous capture,** for v1: hold still for at least two
-  cycles (4.2 s), then move. Continuous capture can come later on the same
-  session format.
+- **Continuous capture, not stations.** The plan was to hold still for two
+  cycles at each station, but the first run decoded while walking:
+  `firmament solve` follows each LED through a cycle with the poses and depth.
+  The station-based session format in [`SPEC.md`](SPEC.md#capture-session) is
+  unused while Stray Scanner records.
+- **Map with the room lit.** The first run decoded in daylight, so mapping
+  doesn't need a dark room, and ARKit tracking in the dark stops being a risk.
 - **Unseen LEDs get approximate positions.** Any LED the solver can't place,
   whether hidden by the walls or a branch, or never decoded, is interpolated
   along its strand between its seen neighbors. Approximate is fine for these,
@@ -48,12 +52,13 @@ as test data.
   not necessarily on the tree, so nothing may assume ten strands or a cone.
   The pattern player already takes any LED count; the solver's priors come
   from `lights.json`.
-- **Front arc only.** The tree stays in a corner, so stations cover an arc in
+- **Front arc only.** The tree stays in a corner, so captures cover an arc in
   front of it, not a full circle. LEDs facing the walls are never seen, which
   makes interpolation part of v1 rather than polish.
-- **Capture app: native Swift** (a Mac with Xcode is on hand). An
-  off-the-shelf LiDAR recorder that exports per-frame poses could stand in for
-  a first spike; not checked which ones do.
+- **Capture app: Stray Scanner for now.** It records everything the solver
+  needs (see [Recorder](#2-recorder-iphone-swift)). Write a native Swift app
+  (a Mac with Xcode is on hand) only if Stray Scanner falls short, for example
+  if exposure needs locking.
 
 ## Pipeline
 
@@ -82,8 +87,18 @@ as test data.
   state. Images as frames or a video.
 - A button marks station start and end, so the solver knows when the camera
   was meant to be still.
-- Stations: cover the arc in front of the corner from many heights, including
-  above and below, and as far around each side as the walls allow.
+- Cover the arc in front of the corner from many heights, including above and
+  below, and as far around each side as the walls allow.
+
+For now, [Stray Scanner](https://github.com/strayrobots/scanner) (MIT) stands
+in. Per its `docs/format.md`, it records an HEVC video, an `odometry.csv` with
+a pose and intrinsics for every frame, and LiDAR depth. Its docs don't state
+the pose convention or the tracking state. A recording shows the camera axes
+are OpenCV's (x right, y down, z forward), not ARKit's, in a gravity-aligned
+world with y up. Depth is a 256 x 192 PNG in millimeters, and the video is
+1920 x 1440 at a nominal 60 fps, with about 53 fps actually recorded.
+Intrinsics change slightly every frame, so `camera_matrix.csv` (the last
+frame's) isn't enough. No tracking state is recorded.
 
 ### 3. Solver (laptop, Python)
 
@@ -103,6 +118,11 @@ as test data.
      surface.
    - Interpolate LEDs that were never seen along their strand.
 7. **Score** every LED: number of views, reprojection error, prior agreement.
+
+`firmament solve` does detect, sync, and decode. In place of triangulation, it
+places each LED from one frame's depth in each cycle and takes the median
+across cycles. It interpolates unplaced LEDs along their strand, and does no
+refinement, priors, or scoring yet.
 
 #### Bundle adjustment
 
@@ -135,11 +155,12 @@ A 3D plot of the points, colored by confidence, so bad ones are easy to spot.
 Later, a web or native app for exploring the map, with interpolated LEDs shown
 apart from seen ones.
 
-### 6. Streamer (later)
+### 6. Streamer
 
 A small service that computes a color per LED from (x, y, z) each frame and
 sends DDP frames to WLED. Effects: vertical sweeps, rotating colors, rising
-flames. It can share DDP code with the pattern player.
+flames. It shares DDP code with the pattern player. Built as
+`firmament stream`, which also shows effects in a 3D preview.
 
 ## Capture session layout
 
@@ -157,7 +178,8 @@ optional cone in a separate `lights.json`. The synthetic generator writes this s
 
 ## Risks
 
-- ARKit tracking in a dim room (first thing to test).
+- Bright backgrounds. `solve` rejects a lit spot when the area around it is
+  bright, so an LED in front of a window or a lamp can go unplaced.
 - Exposure blooming the LEDs.
 - LEDs facing away from the camera biasing detections.
 - LEDs facing the walls never being seen. Each wrap of a strand passes behind
@@ -166,7 +188,8 @@ optional cone in a separate `lights.json`. The synthetic generator writes this s
   LED, so it decodes as that LED. A glossy reflection moves between views and
   fails triangulation, but a diffuse glow is a fixed spot on the wall and
   triangulates fine. Reject it by blob size and by distance from the cone.
-- Drift between stations.
+  Shiny ornaments and tinsel reflect the same way.
+- Drift over the walk.
 - Rolling shutter splitting a bit transition across one frame (holding each
   slot for 3+ frames, and discarding transition frames, should cover it).
 
@@ -182,19 +205,6 @@ optional cone in a separate `lights.json`. The synthetic generator writes this s
   Positions from separate cycles agreed within about 2 cm. On a strand
   along a beam, the depth is the beam's; on the tree, it may be a branch
   behind the LED.
-- Are stations needed? The first run decoded while walking, by following
-  LEDs with poses and depth rather than holding the camera still.
-- Is there a recorder app good enough to skip writing the Swift app for the
-  spike? [Stray Scanner](https://github.com/strayrobots/scanner) (MIT) looks
-  like it: per its `docs/format.md`, it records an HEVC video, an
-  `odometry.csv` with a pose and intrinsics for every frame, and LiDAR depth.
-  Its docs don't state the pose convention or the tracking state. A
-  recording shows the camera axes are OpenCV's (x right, y down, z
-  forward), not ARKit's, in a gravity-aligned world with y up. Depth is a
-  256 x 192 PNG in millimeters, and the video is 1920 x 1440 at a nominal
-  60 fps, with about 53 fps actually recorded. Intrinsics change slightly
-  every frame, so `camera_matrix.csv` (the last frame's) isn't enough. No
-  tracking state is recorded.
 
 ## Plan
 
@@ -206,23 +216,25 @@ In order. Steps 1, 2 and 4 need no phone or tree; 3 and 5 do.
 2. **Pattern player.** DDP loop with debug modes; check it on the tree. Built,
    and checked by eye on a single 50-LED strand (2026-11-22). Whether indices
    continue across the two outputs is still open.
-3. **Tracking spike.** Minimal Swift recorder (or an existing app) on the
-   phone, with the pattern player running, in a dim room. Does tracking hold?
-   Drift isn't measured on its own; the solver's reprojection error across
-   stations shows it. First run (2026-11-22): Stray Scanner, one 50-LED
-   strand on a beam, daylight, a 10.8 s walk with no stations. Poses and
-   depth reproject matched scene features within 1 to 9 px across cycles,
-   and a scratch decoder read 34 of the 50 IDs, with neighbors about
-   0.10 m apart. A dim room is still untested.
-4. **Synthetic generator,** then the solver against it: detect, sync, decode,
-   triangulate.
+3. **Tracking spike.** An existing recorder app on the phone, with the pattern
+   player running. Does tracking hold? Done (2026-11-22): Stray Scanner, one
+   50-LED strand on a beam, daylight, a 10.8 s walk with no stations. Poses
+   and depth reproject matched scene features within 1 to 9 px across cycles,
+   and the decoder, now `firmament solve`, read 34 of the 50 IDs, with
+   neighbors about 0.10 m apart. Mapping happens with the room lit, so a dim
+   room needs no test.
+4. **Solver:** detect, sync, decode, triangulate. Built through decode as
+   `firmament solve`, with each LED placed from depth instead of
+   triangulated, and tested against synthetic frames. Triangulation and a
+   synthetic generator that writes whole recordings are still to do.
 5. **Real data.** Record the tree and run the solver.
 6. **Height-ordered WLED ledmap,** the quick win once any positions exist.
    Unseen LEDs get heights by linear interpolation along their strand between
    seen neighbors.
 7. Priors and bundle adjustment.
 8. Viewer and exporters.
-9. Streamer with a first 3D effect.
+9. Streamer with a first 3D effect. Built as `firmament stream`, with
+   rainbow and wipe examples.
 
 A v1 for this season would stop at step 6, plus a rough 3D map from raw ARKit
 poses, with unseen LEDs linearly interpolated along their strand.

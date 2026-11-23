@@ -108,14 +108,14 @@ uv run ty check
 
 1. **Pattern player (laptop, Python).** Loops a self-clocking gray-code
    pattern to WLED over DDP.
-2. **Recorder (iPhone, native Swift).** Records frames, ARKit poses,
-   intrinsics, and depth. A dumb recorder; it doesn't control the LEDs.
+2. **Recorder (iPhone).** Records frames, ARKit poses, intrinsics, and depth.
+   A dumb recorder; it doesn't control the LEDs. Stray Scanner, for now.
 3. **Solver (laptop, Python, offline).** Decodes LED IDs, triangulates, cleans up with
    string and tree-shape priors, exports positions.
 4. **Viewer and exporters.** A 3D preview, plus CSV/JSON, xLights model, and
    WLED ledmap outputs.
-5. **Streamer (later).** Computes 3D effects per LED and sends them to WLED
-   over DDP.
+5. **Streamer (laptop, Python).** Computes 3D effects per LED and sends them
+   to WLED over DDP.
 
 ## Context
 
