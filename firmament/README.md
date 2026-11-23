@@ -7,8 +7,9 @@ The name: a sky full of points of light, each with a coordinate.
 
 ## Status
 
-The pattern player is built and unit-tested, but it hasn't run against the
-tree yet. Everything else is design only. See [`DESIGN.md`](DESIGN.md) for the
+The pattern player is built and checked on a single strand. The streamer plays
+effect files from a positions file. The solver is a prototype outside the
+repository, and everything else is design only. See [`DESIGN.md`](DESIGN.md) for the
 plan and [`SPEC.md`](SPEC.md) for the pattern and session format.
 
 ## Run the pattern player
@@ -33,6 +34,33 @@ uv run firmament light --host wled.local --leds 500 --strand 5
 ```
 
 `--level` sets the brightness of a lit LED, from 0 to 255 (default 32).
+
+## Play an effect
+
+An effect is a Python file that defines `color(led, t)`. It gets one LED and
+the time in seconds since the stream started, and returns `(r, g, b)` from 0
+to 255; values outside that range are clamped. `led` has `index`, `x`, `y`,
+`z` (meters, y up), and `views` (0 for an interpolated position).
+
+```python
+def color(led, t):
+    return (255, 80, 0) if led.y < t % 2 else (0, 0, 0)
+```
+
+Stream it to WLED, to a 3D preview in [Rerun](https://rerun.io)'s viewer, or
+both, using a positions file in the [`leds.csv`](SPEC.md#led-positions)
+format:
+
+```sh
+uv run firmament stream examples/rainbow.py --map leds.csv --host wled.local --preview
+```
+
+Leave out `--host` to only preview, or `--preview` to only light the LEDs.
+`stream` reloads the effect each time you save it. If a save fails to load
+or raises an error, `stream` prints the error and keeps playing the last
+version that worked. `--brightness` scales the colors sent to WLED, from 0 to
+255 (default 64); the preview always shows full colors. `--fps` sets the
+frame rate (default 30).
 
 ## Develop
 

@@ -3,7 +3,9 @@ name = "firmament"
 version = "0.1.0"
 description = "Find each LED's position in 3D from phone captures"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "rerun-sdk>=0.43.2",
+]
 
 [project.scripts]
 firmament = "firmament.cli:main"

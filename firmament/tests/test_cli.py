@@ -118,3 +118,56 @@ def test_light_rejects_index_beyond_led_count(capsys):
 def test_unknown_host_is_reported(capsys):
     assert main(["play", "--host", "no-such-host.invalid", "--leds", "100"]) == 1
     assert "can't find no-such-host.invalid" in capsys.readouterr().err
+
+
+def _stream_files(tmp_path):
+    leds = tmp_path / "leds.csv"
+    leds.write_text("index,x,y,z,views\n0,0,0,0,1\n1,0,1,0,0\n")
+    effect = tmp_path / "effect.py"
+    # Interrupt on the second frame, the way Ctrl-C would.
+    effect.write_text(
+        "def color(led, t):\n"
+        "    if t > 0:\n"
+        "        raise KeyboardInterrupt\n"
+        "    return (255, 0, 128) if led.index == 0 else (0, 0, 0)\n"
+    )
+    return leds, effect
+
+
+def test_stream_sends_scaled_frames_then_turns_leds_off(receiver, tmp_path, capsys):
+    leds, effect = _stream_files(tmp_path)
+    port = str(receiver.getsockname()[1])
+
+    assert (
+        main(["stream", str(effect), "--map", str(leds), "--host", "localhost", "--port", port])
+        == 0
+    )
+
+    first, off = (receiver.recv(2048)[Header.SIZE :] for _ in range(2))
+    assert first == bytes([64, 0, 32]) + bytes(3)
+    assert off == bytes(6)
+    err = capsys.readouterr().err
+    assert "streaming effect.py (2 LEDs) to localhost (127.0.0.1); press Ctrl-C to stop" in err
+    assert "stopped and turned the LEDs off" in err
+
+
+@pytest.mark.parametrize(
+    ("args", "match"),
+    [
+        ([], "stream needs --host, --preview, or both"),
+        (["--host", "127.0.0.1", "--map", "missing.csv"], "can't read missing.csv"),
+    ],
+)
+def test_stream_rejects_unusable_arguments(tmp_path, capsys, args, match):
+    leds, effect = _stream_files(tmp_path)
+    with pytest.raises(SystemExit) as exit_info:
+        main(["stream", str(effect), "--map", str(leds), *args])
+    assert exit_info.value.code == 2
+    assert match in capsys.readouterr().err
+
+
+def test_stream_rejects_a_missing_effect_file(tmp_path, capsys):
+    leds, _ = _stream_files(tmp_path)
+    with pytest.raises(SystemExit):
+        main(["stream", "nope.py", "--map", str(leds), "--host", "127.0.0.1"])
+    assert "can't find the effect file nope.py" in capsys.readouterr().err

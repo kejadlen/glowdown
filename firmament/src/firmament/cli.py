@@ -1,15 +1,18 @@
-"""Command-line entry point: `firmament play` and `firmament light`."""
+"""Command-line entry point: `firmament play`, `firmament light`, and `firmament stream`."""
 
 import argparse
 import json
 import sys
 import time
 from collections.abc import Callable
+from contextlib import ExitStack
 from itertools import count
+from pathlib import Path
 from typing import TextIO
 
 from firmament.codes import MAX_LEDS
 from firmament.ddp import PORT, DdpSender
+from firmament.effects import LiveEffect, scale
 from firmament.pattern import (
     ALL_OFF,
     MIN_LEDS,
@@ -19,6 +22,7 @@ from firmament.pattern import (
     slot_frame,
     strand_frame,
 )
+from firmament.positions import read_leds
 
 # Resend a static debug frame well inside WLED's 2.5 s realtime timeout.
 LIGHT_RESEND_SECONDS = 1.0
@@ -55,6 +59,8 @@ def run(
 def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
+    if args.command == "stream":
+        return _stream(parser, args)
     try:
         frames = _frames(args)
     except ValueError as e:
@@ -81,14 +87,87 @@ def main(argv: list[str] | None = None) -> int:
         except OSError as e:
             print(f"firmament: can't send to {args.host}: {e}", file=sys.stderr)
             return 1
-        try:
-            sender.send(slot_frame(ALL_OFF, args.leds, args.level))
-        except OSError:
-            # WLED goes back to its own effect after its realtime timeout anyway.
-            print("firmament: stopped, but couldn't turn the LEDs off", file=sys.stderr)
-        else:
-            print("firmament: stopped and turned the LEDs off", file=sys.stderr)
+        _turn_off(sender, slot_frame(ALL_OFF, args.leds, args.level))
     return 0
+
+
+def _stream(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    if args.host is None and not args.preview:
+        parser.error("stream needs --host, --preview, or both")
+    if not args.effect.is_file():
+        parser.error(f"can't find the effect file {args.effect}")
+    try:
+        leds = read_leds(args.map)
+    except OSError as e:
+        parser.error(f"can't read {args.map}: {e.strerror}")
+    except ValueError as e:
+        parser.error(str(e))
+
+    effect = LiveEffect(
+        args.effect, lambda message: print(f"firmament: {message}", file=sys.stderr)
+    )
+    with ExitStack() as stack:
+        sender = None
+        if args.host is not None:
+            try:
+                sender = stack.enter_context(DdpSender(args.host, args.port))
+            except OSError as e:
+                print(f"firmament: can't find {args.host}: {e}", file=sys.stderr)
+                return 1
+        preview = None
+        if args.preview:
+            # Imported here so play and light don't pay for loading Rerun.
+            from firmament.preview import Preview
+
+            preview = Preview(leds)
+
+        def frame_for_tick(k: int) -> bytes:
+            t = k / args.fps
+            frame = effect.frame(leds, t)
+            if preview:
+                preview.show(t, frame)
+            return scale(frame, args.brightness)
+
+        def on_rebase(lag: float) -> None:
+            print(
+                f"firmament: fell {lag * 1000:.0f} ms behind; restarting frame timing",
+                file=sys.stderr,
+            )
+
+        targets = [f"{args.host} ({sender.ip})"] if sender else []
+        targets += ["the preview"] if preview else []
+        print(
+            f"firmament: streaming {args.effect.name} ({len(leds)} LEDs) to "
+            f"{' and '.join(targets)}; press Ctrl-C to stop",
+            file=sys.stderr,
+        )
+        try:
+            run(
+                sender.send if sender else lambda _: None,
+                frame_for_tick,
+                1 / args.fps,
+                on_rebase=on_rebase,
+            )
+        except KeyboardInterrupt:
+            pass
+        except OSError as e:
+            print(f"firmament: can't send to {args.host}: {e}", file=sys.stderr)
+            return 1
+        if sender:
+            _turn_off(sender, bytes(3 * len(leds)))
+        else:
+            print("firmament: stopped", file=sys.stderr)
+    return 0
+
+
+def _turn_off(sender: DdpSender, off: bytes) -> None:
+    try:
+        sender.send(off)
+    except OSError:
+        # WLED goes back to its own effect after its realtime timeout anyway.
+        print("firmament: stopped, but couldn't turn the LEDs off", file=sys.stderr)
+    else:
+        print("firmament: stopped and turned the LEDs off", file=sys.stderr)
 
 
 def _activity(args: argparse.Namespace) -> str:
@@ -177,6 +256,24 @@ def _parser() -> argparse.ArgumentParser:
         type=_ranged(1, MAX_LEDS),
         default=50,
         help="LEDs per strand (default 50)",
+    )
+
+    stream = commands.add_parser("stream", help="play an effect file on the mapped LEDs")
+    stream.add_argument("effect", type=Path, help="Python file that defines color(led, t)")
+    stream.add_argument(
+        "--map", type=Path, required=True, help="LED positions file (leds.csv, see SPEC.md)"
+    )
+    stream.add_argument("--host", help="WLED hostname or IP address; leave out to only preview")
+    stream.add_argument("--port", type=int, default=PORT, help=f"DDP port (default {PORT})")
+    stream.add_argument("--preview", action="store_true", help="show the effect in Rerun's viewer")
+    stream.add_argument(
+        "--fps", type=_ranged(1, 60), default=30, help="frames per second, 1 to 60 (default 30)"
+    )
+    stream.add_argument(
+        "--brightness",
+        type=_ranged(0, 255),
+        default=64,
+        help="scale for the colors sent to WLED, 0 to 255 (default 64); the preview isn't scaled",
     )
     return parser
 
