@@ -1,4 +1,4 @@
-"""Read LED positions, as defined in SPEC.md (LED positions)."""
+"""Read and write LED positions, as defined in SPEC.md (LED positions)."""
 
 import csv
 import math
@@ -34,6 +34,14 @@ def read_leds(path: Path) -> list[Led]:
     if not MIN_LEDS <= len(leds) <= MAX_LEDS:
         raise ValueError(f"{path}: {len(leds)} LEDs is outside {MIN_LEDS} to {MAX_LEDS}")
     return leds
+
+
+def write_leds(path: Path, leds: list[Led]) -> None:
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f, lineterminator="\n")
+        writer.writerow(COLUMNS)
+        for led in leds:
+            writer.writerow([led.index, *(f"{v:.4f}" for v in (led.x, led.y, led.z)), led.views])
 
 
 def _led(row: dict[str, str], line: int, path: Path) -> Led:

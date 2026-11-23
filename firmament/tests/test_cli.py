@@ -171,3 +171,15 @@ def test_stream_rejects_a_missing_effect_file(tmp_path, capsys):
     with pytest.raises(SystemExit):
         main(["stream", "nope.py", "--map", str(leds), "--host", "127.0.0.1"])
     assert "can't find the effect file nope.py" in capsys.readouterr().err
+
+
+def test_solve_rejects_a_missing_capture(tmp_path, capsys):
+    with pytest.raises(SystemExit) as exit_info:
+        main(["solve", str(tmp_path / "nope"), "--leds", "50"])
+    assert exit_info.value.code == 2
+    assert "can't find the capture directory" in capsys.readouterr().err
+
+
+def test_solve_reports_a_directory_that_isnt_a_capture(tmp_path, capsys):
+    assert main(["solve", str(tmp_path), "--leds", "50"]) == 1
+    assert "missing odometry.csv; is this a Stray Scanner capture?" in capsys.readouterr().err

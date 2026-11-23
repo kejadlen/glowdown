@@ -1,4 +1,4 @@
-"""Command-line entry point: `firmament play`, `firmament light`, and `firmament stream`."""
+"""Command-line entry point: `firmament play`, `light`, `stream`, and `solve`."""
 
 import argparse
 import json
@@ -22,7 +22,7 @@ from firmament.pattern import (
     slot_frame,
     strand_frame,
 )
-from firmament.positions import read_leds
+from firmament.positions import read_leds, write_leds
 
 # Resend a static debug frame well inside WLED's 2.5 s realtime timeout.
 LIGHT_RESEND_SECONDS = 1.0
@@ -61,6 +61,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.command == "stream":
         return _stream(parser, args)
+    if args.command == "solve":
+        return _solve(parser, args)
     try:
         frames = _frames(args)
     except ValueError as e:
@@ -158,6 +160,44 @@ def _stream(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
             _turn_off(sender, bytes(3 * len(leds)))
         else:
             print("firmament: stopped", file=sys.stderr)
+    return 0
+
+
+def _solve(parser: argparse.ArgumentParser, args: argparse.Namespace) -> int:
+    if not args.capture.is_dir():
+        parser.error(f"can't find the capture directory {args.capture}")
+    out = args.out if args.out is not None else args.capture / "leds.csv"
+    # Imported here so the other commands don't pay for loading OpenCV.
+    from firmament.solve import read_stray, solve
+
+    print(f"firmament: reading {args.capture}", file=sys.stderr)
+    try:
+        solution = solve(read_stray(args.capture), args.leds, args.strand_length)
+    except ValueError as e:
+        print(f"firmament: {e}", file=sys.stderr)
+        return 1
+
+    placed = sum(1 for led in solution.leds if led.views > 0)
+    print(
+        f"firmament: found {solution.cycles} cycles ({solution.slot_seconds * 1000:.0f} ms "
+        f"slots): {solution.decodes} decodes placed {placed} of {args.leds} LEDs, "
+        f"{solution.rejects} rejected",
+        file=sys.stderr,
+    )
+    if solution.borrowed_strands:
+        borrowed = solution.borrowed_strands
+        label = "strand" if len(borrowed) == 1 else "strands"
+        print(
+            f"firmament: {label} {', '.join(map(str, borrowed))} had fewer than 2 placed LEDs "
+            "each, so they were interpolated from other strands",
+            file=sys.stderr,
+        )
+    try:
+        write_leds(out, solution.leds)
+    except OSError as e:
+        print(f"firmament: can't write {out}: {e.strerror}", file=sys.stderr)
+        return 1
+    print(f"firmament: wrote {out}", file=sys.stderr)
     return 0
 
 
@@ -275,6 +315,24 @@ def _parser() -> argparse.ArgumentParser:
         type=_ranged(0, 255),
         default=64,
         help="scale for the colors sent to WLED, 0 to 255 (default 64); the preview isn't scaled",
+    )
+
+    solve = commands.add_parser("solve", help="find LED positions from a Stray Scanner capture")
+    solve.add_argument("capture", type=Path, help="Stray Scanner capture directory")
+    solve.add_argument(
+        "--leds",
+        type=_ranged(MIN_LEDS, MAX_LEDS),
+        required=True,
+        help=f"number of LEDs the pattern was played on, {MIN_LEDS} to {MAX_LEDS}",
+    )
+    solve.add_argument(
+        "--strand-length",
+        type=_ranged(1, MAX_LEDS),
+        default=50,
+        help="LEDs per strand, for interpolating unplaced LEDs (default 50)",
+    )
+    solve.add_argument(
+        "--out", type=Path, help="positions file to write (default leds.csv in the capture)"
     )
     return parser
 
