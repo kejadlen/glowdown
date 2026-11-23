@@ -176,11 +176,25 @@ optional cone in a separate `lights.json`. The synthetic generator writes this s
   pattern player's debug mode.)
 - Can exposure be locked during an ARKit session?
 - Whether LiDAR meaningfully improves the cone prior or visibility checks.
+  It already helps decoding: one pixel, its depth, and the pose give an LED
+  a position from a single view, and projecting that position into the
+  other frames follows the LED through all 14 slots while the camera moves.
+  Positions from separate cycles agreed within about 2 cm. On a strand
+  along a beam, the depth is the beam's; on the tree, it may be a branch
+  behind the LED.
+- Are stations needed? The first run decoded while walking, by following
+  LEDs with poses and depth rather than holding the camera still.
 - Is there a recorder app good enough to skip writing the Swift app for the
   spike? [Stray Scanner](https://github.com/strayrobots/scanner) (MIT) looks
   like it: per its `docs/format.md`, it records an HEVC video, an
   `odometry.csv` with a pose and intrinsics for every frame, and LiDAR depth.
-  Its docs don't state the pose convention or the tracking state.
+  Its docs don't state the pose convention or the tracking state. A
+  recording shows the camera axes are OpenCV's (x right, y down, z
+  forward), not ARKit's, in a gravity-aligned world with y up. Depth is a
+  256 x 192 PNG in millimeters, and the video is 1920 x 1440 at a nominal
+  60 fps, with about 53 fps actually recorded. Intrinsics change slightly
+  every frame, so `camera_matrix.csv` (the last frame's) isn't enough. No
+  tracking state is recorded.
 
 ## Plan
 
@@ -195,7 +209,11 @@ In order. Steps 1, 2 and 4 need no phone or tree; 3 and 5 do.
 3. **Tracking spike.** Minimal Swift recorder (or an existing app) on the
    phone, with the pattern player running, in a dim room. Does tracking hold?
    Drift isn't measured on its own; the solver's reprojection error across
-   stations shows it.
+   stations shows it. First run (2026-11-22): Stray Scanner, one 50-LED
+   strand on a beam, daylight, a 10.8 s walk with no stations. Poses and
+   depth reproject matched scene features within 1 to 9 px across cycles,
+   and a scratch decoder read 34 of the 50 IDs, with neighbors about
+   0.10 m apart. A dim room is still untested.
 4. **Synthetic generator,** then the solver against it: detect, sync, decode,
    triangulate.
 5. **Real data.** Record the tree and run the solver.
