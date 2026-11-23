@@ -179,7 +179,7 @@ index,x,y,z,views
 | Column | Meaning |
 | --- | --- |
 | `index` | LED index. Every index from `0` to `led_count - 1` appears exactly once, in order. |
-| `x`, `y`, `z` | Position in meters, in a gravity-aligned frame with y up. The origin and the heading are wherever the capture's world frame put them. |
+| `x`, `y`, `z` | Position in meters, in the start view: seen from where the camera was at the start of the capture, x points right, y points up (against gravity), and z points level, back toward the camera. The origin is arbitrary. |
 | `views` | How many observations the position came from. `0` means the solver never placed the LED and interpolated it along its strand. |
 
 Readers find columns by their header names and ignore columns they don't
