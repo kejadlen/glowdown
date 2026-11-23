@@ -90,6 +90,11 @@ uv run firmament stream examples/rainbow.py --map leds.csv --host wled.local --p
 ```
 
 Leave out `--host` to only preview, or `--preview` to only light the LEDs.
+The preview marks the LEDs the solver interpolated rather than saw. Unlit,
+they're purple dots instead of gray, and lit, they're drawn flat instead of
+shaded. They're logged under `leds/interpolated` and `sockets/interpolated`,
+so you can hide them in the viewer's blueprint panel, and hovering over a dot
+shows its index and view count.
 `stream` reloads the effect each time you save it. If a save fails to load
 or raises an error, `stream` prints the error and keeps playing the last
 version that worked. `--brightness` scales the colors sent to WLED, from 0 to

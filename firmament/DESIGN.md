@@ -153,7 +153,9 @@ each image and where it was actually seen.
 
 A 3D plot of the points, colored by confidence, so bad ones are easy to spot.
 Later, a web or native app for exploring the map, with interpolated LEDs shown
-apart from seen ones.
+apart from seen ones. For now, `firmament stream --preview` shows the map in
+Rerun's viewer, with interpolated LEDs in their own color and entity, but no
+confidence yet.
 
 ### 6. Streamer
 
