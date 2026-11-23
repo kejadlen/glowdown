@@ -165,6 +165,26 @@ rotation, so `intrinsics` apply to them directly.
 slot sent: `{"t": <laptop Unix time>, "slot": <0 to 13>}`. The solver must
 not depend on it.
 
+## LED positions
+
+The solver writes each LED's position to `leds.csv`. The streamer and the
+exporters read it.
+
+```csv
+index,x,y,z,views
+0,-0.412,0.581,-1.402,0
+1,-0.371,0.535,-1.364,2
+```
+
+| Column | Meaning |
+| --- | --- |
+| `index` | LED index. Every index from `0` to `led_count - 1` appears exactly once, in order. |
+| `x`, `y`, `z` | Position in meters, in a gravity-aligned frame with y up. The origin and the heading are wherever the capture's world frame put them. |
+| `views` | How many observations the position came from. `0` means the solver never placed the LED and interpolated it along its strand. |
+
+Readers find columns by their header names and ignore columns they don't
+know, so later versions can add columns such as a confidence score.
+
 ## Not in format 1
 
 - Depth. LiDAR's value is still an open question in
